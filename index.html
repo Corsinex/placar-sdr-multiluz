@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranking SDR • Multiluz Solar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="stadium-lights" aria-hidden="true">
+<span></span><span></span><span></span><span></span><span></span><span></span>
+</div>
+
+<header class="topbar">
+<div class="topbar-inner">
+<div class="brand">
+<span class="brand-mark">☀️</span>
+<div>
+<h1>Placar SDR — Multiluz Solar</h1>
+<p id="updated-label">Central de Agendamentos</p>
+</div>
+</div>
+<div class="scoreboard-clock">
+<span class="clock-label">Rodada de hoje</span>
+<span class="clock-value" id="round-count">0 agendamentos</span>
+</div>
+</div>
+</header>
+
+<main>
+<section class="leader-spotlight" id="leader-spotlight" aria-live="polite">
+<!-- filled by JS -->
+</section>
+
+<section class="board" id="board" aria-label="Ranking dos SDRs">
+<!-- filled by JS -->
+</section>
+
+<footer class="footnote">
+<p>Para atualizar as pontuações, edite <code>data.json</code> direto pelo GitHub — sem precisar mexer em código.</p>
+</footer>
+</main>
+
+<canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+<script src="script.js"></script>
+</body>
+</html>
