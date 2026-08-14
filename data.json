@@ -6,6 +6,43 @@
       "nome": "Maria Eduarda (Duda)",
       "traco": "É baixinha",
       "avatar": "baixinha",
+      "foto": "",
+      "agendamentos": 140
+    },
+    {
+      "id": "tarsila",
+      "nome": "Tarsila Pires",
+      "traco": "Mamãe coruja",
+      "avatar": "mamae",
+      "foto": "",
+      "agendamentos": 131
+    },
+    {
+      "id": "joao",
+      "nome": "João Vitor",
+      "traco": "Ama futebol, mas é ruim de bola",
+      "avatar": "futebol",
+      "foto": "",
+      "agendamentos": 129
+    },
+    {
+      "id": "caio",
+      "nome": "Caio Souza Drumond",
+      "traco": "Pescador de plantão",
+      "avatar": "pescador",
+      "foto": "",
+      "agendamentos": 105
+    }
+  ]
+}
+
+  "atualizadoEm": "2026-08-14",
+  "sdrs": [
+    {
+      "id": "duda",
+      "nome": "Maria Eduarda (Duda)",
+      "traco": "É baixinha",
+      "avatar": "baixinha",
       "agendamentos": 140
     },
     {
