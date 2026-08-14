@@ -2,68 +2,35 @@
   "atualizadoEm": "2026-08-14",
   "sdrs": [
     {
-      "id": "duda",
-      "nome": "Maria Eduarda (Duda)",
-      "traco": "É baixinha",
+      "id": "maria-eduarda",
+      "nome": "Maria Eduarda ",
+      "traco": "Duda",
       "avatar": "baixinha",
-      "foto": "",
+      "foto": "fotos/maria-eduarda.jpg",
       "agendamentos": 140
     },
     {
       "id": "tarsila",
-      "nome": "Tarsila Pires",
-      "traco": "Mamãe coruja",
+      "nome": "Tarsila",
+      "traco": "Mãe da Liz",
       "avatar": "mamae",
-      "foto": "",
+      "foto": "fotos/tarsila.jpg",
       "agendamentos": 131
     },
     {
-      "id": "joao",
+      "id": "joao-vitor",
       "nome": "João Vitor",
-      "traco": "Ama futebol, mas é ruim de bola",
+      "traco": "Jão",
       "avatar": "futebol",
-      "foto": "",
+      "foto": "fotos/joao-vitor.jpg",
       "agendamentos": 129
     },
     {
       "id": "caio",
-      "nome": "Caio Souza Drumond",
-      "traco": "Pescador de plantão",
+      "nome": "Caio",
+      "traco": "Pescador ",
       "avatar": "pescador",
-      "foto": "",
-      "agendamentos": 105
-    }
-  ]
-}
-
-  "atualizadoEm": "2026-08-14",
-  "sdrs": [
-    {
-      "id": "duda",
-      "nome": "Maria Eduarda (Duda)",
-      "traco": "É baixinha",
-      "avatar": "baixinha",
-      "agendamentos": 140
-    },
-    {
-      "id": "tarsila",
-      "nome": "Tarsila Pires",
-      "traco": "Mamãe coruja",
-      "avatar": "mamae",
-      "agendamentos": 131
-    },
-    {
-      "id": "joao",
-      "nome": "João Vitor",
-      "traco": "Ama futebol, mas é ruim de bola",
-      "avatar": "futebol",
-      "agendamentos": 129
-    },
-    {
-      "id": "caio",
-      "nome": "Caio Souza Drumond",
-      "traco": "Pescador de plantão",
-      "avatar": "pescador",
+      "foto": "fotos/caio.jpg",
       "agendamentos": 105
     }
   ]
