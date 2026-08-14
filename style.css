@@ -180,6 +180,7 @@ display:flex; align-items:center; justify-content:center;
 border: 4px solid #fff3c9;
 box-shadow: 0 12px 30px -10px #ffc93c99;
 position: relative;
+overflow: hidden;
 }
 .leader-avatar-wrap svg{ width: 82px; height: 82px; }
 .crown{
@@ -189,6 +190,7 @@ transform: translateX(-50%);
 font-size: 30px;
 animation: bob 2.4s ease-in-out infinite;
 filter: drop-shadow(0 4px 6px #0006);
+z-index: 2;
 }
 @keyframes bob{
 0%,100%{ transform: translateX(-50%) translateY(0) rotate(-6deg); }
@@ -252,9 +254,20 @@ border-radius: 50%;
 background: linear-gradient(160deg, #1e3f7c, #16305f);
 border: 2px solid #2c4c8a;
 display:flex; align-items:center; justify-content:center;
-overflow: visible;
+overflow: hidden;
+position: relative;
 }
 .avatar-wrap svg{ width: 44px; height: 44px; }
+
+/* fotos reais dos SDRs */
+.avatar-photo{
+width: 100%;
+height: 100%;
+object-fit: cover;
+border-radius: 50%;
+display: block;
+}
+
 .card-info h3{
 font-family: var(--font-display);
 font-size: 17px;
@@ -303,6 +316,8 @@ font-size: 11px;
 color: var(--muted);
 margin-top: 2px;
 }
+
+/* ---------- avatar personality animations (avatar cartoon, quando não há foto) ---------- */
 .anim-baixinha{ animation: hop 1.8s ease-in-out infinite; transform-origin: bottom center; }
 @keyframes hop{
 0%,100%{ transform: translateY(0); }
@@ -327,6 +342,35 @@ margin-top: 2px;
 0%,100%{ transform: rotate(0deg); }
 50%{ transform: rotate(-10deg); }
 }
+
+/* ---------- animações no próprio círculo (funcionam também com foto real) ---------- */
+.avatar-wrap.trait-baixinha, .leader-avatar-wrap.trait-baixinha{
+animation: hop 1.8s ease-in-out infinite;
+}
+.avatar-wrap.trait-mamae, .leader-avatar-wrap.trait-mamae{
+animation: wiggle 1.6s ease-in-out infinite;
+}
+.avatar-wrap.trait-futebol, .leader-avatar-wrap.trait-futebol{
+animation: kick-bounce 2s ease-in-out infinite;
+}
+.avatar-wrap.trait-pescador, .leader-avatar-wrap.trait-pescador{
+animation: fish-wobble 2.2s ease-in-out infinite;
+}
+@keyframes wiggle{
+0%,100%{ transform: rotate(0deg); }
+25%{ transform: rotate(-6deg); }
+75%{ transform: rotate(6deg); }
+}
+@keyframes kick-bounce{
+0%,100%{ transform: scale(1) translateY(0); }
+40%{ transform: scale(0.96,1.04) translateY(-4px); }
+60%{ transform: scale(1.04,0.96) translateY(2px); }
+}
+@keyframes fish-wobble{
+0%,100%{ transform: rotate(0deg); }
+50%{ transform: rotate(-5deg) translateY(-2px); }
+}
+
 .footnote{
 margin-top: 30px;
 text-align: center;
@@ -337,6 +381,9 @@ font-size: 13px;
 background: #0d2147;
 padding: 2px 8px;
 border-radius: 6px;
+color: var(--teal);
+}
+.footnote a{
 color: var(--teal);
 }
 #confetti-canvas{
@@ -350,4 +397,139 @@ z-index: 5;
 .card-score{ grid-column: 2 / -1; text-align: left; display:flex; align-items:baseline; gap:8px; }
 .leader-row{ gap: 16px; }
 .leader-score .num{ font-size: 36px; }
+}
+
+/* ---------- painel admin (admin.html) ---------- */
+.admin-wrap{
+max-width: 760px;
+margin: 0 auto;
+padding: 32px 24px 80px;
+position: relative;
+z-index: 1;
+}
+.admin-panel{
+background: var(--navy-card);
+border: 1px solid var(--line);
+border-radius: var(--radius);
+padding: 22px 24px;
+margin-bottom: 20px;
+}
+.admin-panel h2{
+font-family: var(--font-display);
+margin: 0 0 4px;
+font-size: 18px;
+}
+.admin-panel p.hint{
+margin: 0 0 16px;
+color: var(--muted);
+font-size: 13px;
+line-height: 1.5;
+}
+.admin-field{
+margin-bottom: 14px;
+}
+.admin-field label{
+display:block;
+font-size: 12px;
+color: var(--muted);
+margin-bottom: 6px;
+text-transform: uppercase;
+letter-spacing: .6px;
+}
+.admin-field input[type="text"],
+.admin-field input[type="password"],
+.admin-field input[type="number"]{
+width: 100%;
+background: #0d2147;
+border: 1px solid var(--line);
+color: var(--white);
+padding: 10px 12px;
+border-radius: 10px;
+font-family: var(--font-body);
+font-size: 14px;
+}
+.admin-field input:focus{
+outline: 2px solid var(--teal);
+outline-offset: 1px;
+}
+.admin-grid{
+display:grid;
+grid-template-columns: 1fr 1fr;
+gap: 14px;
+}
+.sdr-card{
+display:grid;
+grid-template-columns: 72px 1fr;
+gap: 16px;
+background: var(--navy-card);
+border: 1px solid var(--line);
+border-radius: var(--radius);
+padding: 18px;
+margin-bottom: 16px;
+align-items: start;
+}
+.sdr-photo-preview{
+width: 72px; height: 72px;
+border-radius: 50%;
+background: linear-gradient(160deg, #1e3f7c, #16305f);
+border: 2px solid #2c4c8a;
+overflow: hidden;
+display:flex; align-items:center; justify-content:center;
+}
+.sdr-photo-preview img{
+width: 100%; height: 100%; object-fit: cover;
+}
+.sdr-photo-preview svg{ width: 50px; height: 50px; }
+.sdr-photo-input{
+margin-top: 8px;
+font-size: 12px;
+color: var(--muted);
+}
+.btn{
+font-family: var(--font-display);
+font-weight: 700;
+border: none;
+border-radius: 999px;
+padding: 12px 22px;
+cursor: pointer;
+font-size: 14px;
+}
+.btn-primary{
+background: var(--gold);
+color: var(--navy-deep);
+box-shadow: 0 8px 22px -8px #ffc93c88;
+}
+.btn-primary:disabled{
+opacity: .5;
+cursor: not-allowed;
+}
+.btn-secondary{
+background: transparent;
+border: 1px solid var(--line);
+color: var(--white);
+}
+.admin-actions{
+display:flex;
+gap: 12px;
+align-items: center;
+flex-wrap: wrap;
+margin-top: 10px;
+}
+.admin-status{
+margin-top: 14px;
+font-size: 13px;
+padding: 10px 14px;
+border-radius: 10px;
+display: none;
+}
+.admin-status.show{ display:block; }
+.admin-status.ok{ background: #0f3d2e; color: #6ee7b7; border: 1px solid #1e6b4e; }
+.admin-status.err{ background: #3d1414; color: #ff9d90; border: 1px solid #6b1e1e; }
+.admin-status.busy{ background: #142b57; color: var(--teal); border: 1px solid var(--line); }
+.admin-top-link{
+display:inline-block;
+margin-bottom: 18px;
+color: var(--teal);
+font-size: 13px;
+text-decoration: none;
 }
