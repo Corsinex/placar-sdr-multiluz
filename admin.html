@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editar Placar SDR • Multiluz Solar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="stadium-lights" aria-hidden="true">
+<span></span><span></span><span></span><span></span><span></span><span></span>
+</div>
+
+<header class="topbar">
+<div class="topbar-inner">
+<div class="brand">
+<span class="brand-mark">✏️</span>
+<div>
+<h1>Editar Placar SDR</h1>
+<p id="updated-label">Atualize agendamentos e fotos do time</p>
+</div>
+</div>
+</div>
+</header>
+
+<main class="admin-wrap">
+<a class="admin-top-link" href="index.html">&larr; Voltar para o placar</a>
+
+<section class="admin-panel">
+<h2>Conexão com o GitHub</h2>
+<p class="hint">
+Para salvar direto neste site, você precisa de um <strong>Personal Access Token</strong> do GitHub com
+permissão de escrita neste repositório. Crie um em
+<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>
+(tipo <em>Fine-grained</em>, selecione apenas o repositório <code>placar-sdr-multiluz</code> e marque a permissão
+<strong>Contents: Read and write</strong>). O token fica salvo apenas neste navegador — não é enviado para
+lugar nenhum além do GitHub.
+</p>
+<div class="admin-grid">
+<div class="admin-field">
+<label for="cfg-owner">Usuário/organização</label>
+<input type="text" id="cfg-owner" placeholder="Corsinex">
+</div>
+<div class="admin-field">
+<label for="cfg-repo">Repositório</label>
+<input type="text" id="cfg-repo" placeholder="placar-sdr-multiluz">
+</div>
+<div class="admin-field">
+<label for="cfg-branch">Branch</label>
+<input type="text" id="cfg-branch" placeholder="main">
+</div>
+<div class="admin-field">
+<label for="cfg-token">Personal Access Token</label>
+<input type="password" id="cfg-token" placeholder="ghp_... ou github_pat_...">
+</div>
+</div>
+<div class="admin-actions">
+<button class="btn btn-secondary" id="btn-save-config">Salvar conexão</button>
+<button class="btn btn-secondary" id="btn-load">Carregar dados atuais</button>
+</div>
+<div class="admin-status" id="config-status"></div>
+</section>
+
+<section class="admin-panel">
+<h2>Time</h2>
+<p class="hint">Ajuste os agendamentos, troque a foto ou o traço de cada SDR. Depois clique em "Salvar no GitHub" no final da página.</p>
+<div id="sdr-list"></div>
+<button class="btn btn-secondary" id="btn-add-sdr">+ Adicionar SDR</button>
+</section>
+
+<section class="admin-panel">
+<h2>Salvar</h2>
+<p class="hint">Isso vai enviar as fotos novas e atualizar o <code>data.json</code> direto no GitHub. O site publicado atualiza sozinho em cerca de um minuto.</p>
+<div class="admin-actions">
+<button class="btn btn-primary" id="btn-save">Salvar no GitHub</button>
+</div>
+<div class="admin-status" id="save-status"></div>
+</section>
+</main>
+
+<script>
+// ---------------------------------------------------------
+// Painel administrativo: edita data.json e envia fotos
+// direto para o repositório via API do GitHub.
+// Nada disso roda em servidor — tudo acontece no seu navegador,
+// usando o token que você cola no campo acima.
+// ---------------------------------------------------------
+
+const AVATAR_OPTIONS = [
+  { value: "baixinha", label: "📏 Baixinha" },
+  { value: "mamae", label: "🍼 Mamãe coruja" },
+  { value: "futebol", label: "⚽ Futebol (ruim de bola)" },
+  { value: "pescador", label: "🎣 Pescador" }
+];
+
+const CONFIG_KEY = "placarSdrAdminConfig";
+let currentData = null;     // { atualizadoEm, sdrs: [...] }
+let currentSha = null;      // sha do data.json carregado
+let pendingPhotos = {};     // { sdrIndex: File }
+
+function loadConfig(){
+  try{
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if(!raw) return {};
+    return JSON.parse(raw);
+  }catch(e){ return {}; }
+}
+
+function saveConfig(cfg){
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+}
+
+function getConfigFromForm(){
+  return {
+    owner: document.getElementById('cfg-owner').value.trim(),
+    repo: document.getElementById('cfg-repo').value.trim(),
+    branch: document.getElementById('cfg-branch').value.trim() || 'main',
+    token: document.getElementById('cfg-token').value.trim()
+  };
+}
+
+function fillConfigForm(cfg){
+  document.getElementById('cfg-owner').value = cfg.owner || 'Corsinex';
+  document.getElementById('cfg-repo').value = cfg.repo || 'placar-sdr-multiluz';
+  document.getElementById('cfg-branch').value = cfg.branch || 'main';
+  document.getElementById('cfg-token').value = cfg.token || '';
+}
+
+function setStatus(elId, kind, message){
+  const el = document.getElementById(elId);
+  el.className = 'admin-status show ' + kind;
+  el.textContent = message;
+}
+
+function clearStatus(elId){
+  const el = document.getElementById(elId);
+  el.className = 'admin-status';
+  el.textContent = '';
+}
+
+function ghHeaders(token){
+  const headers = {
+    'Accept': 'application/vnd.github+json'
+  };
+  if(token) headers['Authorization'] = 'Bearer ' + token;
+  return headers;
+}
+
+function slugify(text){
+  return (text || '')
+    .toString()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') || ('sdr-' + Math.random().toString(36).slice(2, 7));
+}
+
+async function ghGetFile(cfg, path){
+  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(cfg.branch)}`;
+  const res = await fetch(url, { headers: ghHeaders(cfg.token) });
+  if(res.status === 404) return null;
+  if(!res.ok) throw new Error(`Erro ao ler ${path}: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+async function ghPutFile(cfg, path, base64Content, message, sha){
+  const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(path)}`;
+  const body = {
+    message,
+    content: base64Content,
+    branch: cfg.branch
+  };
+  if(sha) body.sha = sha;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { ...ghHeaders(cfg.token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error(`Erro ao salvar ${path}: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result; // data:mime;base64,XXXX
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function avatarPreviewMarkup(sdr){
+  if(sdr._previewUrl){
+    return `<img src="${sdr._previewUrl}" alt="">`;
+  }
+  if(sdr.foto){
+    return `<img src="${sdr.foto}" alt="" onerror="this.style.display='none'">`;
+  }
+  const emoji = { baixinha: '📏', mamae: '🍼', futebol: '⚽', pescador: '🎣' }[sdr.avatar] || '✨';
+  return `<span style="font-size:28px">${emoji}</span>`;
+}
+
+function renderSdrList(){
+  const list = document.getElementById('sdr-list');
+  list.innerHTML = currentData.sdrs.map((sdr, i) => `
+    <div class="sdr-card" data-index="${i}">
+      <div>
+        <div class="sdr-photo-preview" id="preview-${i}">${avatarPreviewMarkup(sdr)}</div>
+        <div class="sdr-photo-input">
+          <input type="file" accept="image/*" data-index="${i}" class="photo-input">
+        </div>
+      </div>
+      <div>
+        <div class="admin-grid">
+          <div class="admin-field">
+            <label>Nome</label>
+            <input type="text" class="field-nome" data-index="${i}" value="${(sdr.nome || '').replace(/"/g,'&quot;')}">
+          </div>
+          <div class="admin-field">
+            <label>Agendamentos</label>
+            <input type="number" min="0" class="field-agendamentos" data-index="${i}" value="${sdr.agendamentos ?? 0}">
+          </div>
+        </div>
+        <div class="admin-field">
+          <label>Traço / apelido</label>
+          <input type="text" class="field-traco" data-index="${i}" value="${(sdr.traco || '').replace(/"/g,'&quot;')}">
+        </div>
+        <div class="admin-field">
+          <label>Estilo do avatar (usado quando não há foto, e na animação)</label>
+          <select class="field-avatar" data-index="${i}">
+            ${AVATAR_OPTIONS.map(o => `<option value="${o.value}" ${o.value === sdr.avatar ? 'selected' : ''}>$${o.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="admin-actions">
+          <button class="btn btn-secondary btn-remove-sdr" data-index="${i}" type="button">Remover</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.photo-input').forEach(input => {
+    input.addEventListener('change', onPhotoChange);
+  });
+  list.querySelectorAll('.field-nome').forEach(input => {
+    input.addEventListener('input', e => {
+      currentData.sdrs[+e.target.dataset.index].nome = e.target.value;
+    });
+  });
+  list.querySelectorAll('.field-agendamentos').forEach(input => {
+    input.addEventListener('input', e => {
+      currentData.sdrs[+e.target.dataset.index].agendamentos = parseInt(e.target.value, 10) || 0;
+    });
+  });
+  list.querySelectorAll('.field-traco').forEach(input => {
+    input.addEventListener('input', e => {
+      currentData.sdrs[+e.target.dataset.index].traco = e.target.value;
+    });
+  });
+  list.querySelectorAll('.field-avatar').forEach(sel => {
+    sel.addEventListener('change', e => {
+      currentData.sdrs[+e.target.dataset.index].avatar = e.target.value;
+    });
+  });
+  list.querySelectorAll('.btn-remove-sdr').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const idx = +e.target.dataset.index;
+      currentData.sdrs.splice(idx, 1);
+      delete pendingPhotos[idx];
+      renderSdrList();
+    });
+  });
+}
+
+function onPhotoChange(e){
+  const idx = +e.target.dataset.index;
+  const file = e.target.files[0];
+  if(!file) return;
+  pendingPhotos[idx] = file;
+  const reader = new FileReader();
+  reader.onload = () => {
+    currentData.sdrs[idx]._previewUrl = reader.result;
+    document.getElementById(`preview-${idx}`).innerHTML = avatarPreviewMarkup(currentData.sdrs[idx]);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadFromGithub(){
+  const cfg = getConfigFromForm();
+  if(!cfg.owner || !cfg.repo){
+    setStatus('config-status', 'err', 'Preencha usuário/organização e repositório.');
+    return;
+  }
+  setStatus('config-status', 'busy', 'Carregando data.json...');
+  try{
+    const file = await ghGetFile(cfg, 'data.json');
+    if(!file){
+      throw new Error('data.json não encontrado neste repositório/branch.');
+    }
+    currentSha = file.sha;
+    const jsonText = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+    currentData = JSON.parse(jsonText);
+    currentData.sdrs.forEach(sdr => { sdr._previewUrl = null; });
+    pendingPhotos = {};
+    renderSdrList();
+    setStatus('config-status', 'ok', 'Dados carregados. Faça as alterações e clique em "Salvar no GitHub".');
+  }catch(err){
+    console.error(err);
+    setStatus('config-status', 'err', 'Erro ao carregar: ' + err.message);
+  }
+}
+
+async function saveToGithub(){
+  const cfg = getConfigFromForm();
+  if(!cfg.owner || !cfg.repo || !cfg.token){
+    setStatus('save-status', 'err', 'Preencha usuário, repositório e token na seção de conexão.');
+    return;
+  }
+  if(!currentData){
+    setStatus('save-status', 'err', 'Carregue os dados atuais antes de salvar.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  setStatus('save-status', 'busy', 'Enviando fotos e atualizando data.json...');
+
+  try{
+    // 1. usados ids já existentes, gera slug único para novos SDRs sem id
+    const usedIds = new Set(currentData.sdrs.map(s => s.id).filter(Boolean));
+    currentData.sdrs.forEach(sdr => {
+      if(!sdr.id){
+        let base = slugify(sdr.nome);
+        let id = base, n = 2;
+        while(usedIds.has(id)){ id = `${base}-${n++}`; }
+        sdr.id = id;
+        usedIds.add(id);
+      }
+    });
+
+    // 2. envia fotos pendentes
+    for(const idxStr of Object.keys(pendingPhotos)){
+      const idx = +idxStr;
+      const sdr = currentData.sdrs[idx];
+      if(!sdr) continue;
+      const file = pendingPhotos[idx];
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const path = `fotos/${sdr.id}.${ext}`;
+      const base64 = await fileToBase64(file);
+      const existing = await ghGetFile(cfg, path);
+      await ghPutFile(cfg, path, base64, `Atualiza foto de ${sdr.nome}`, existing ? existing.sha : undefined);
+      sdr.foto = path;
+    }
+
+    // 3. monta e envia data.json atualizado
+    const today = new Date();
+    const iso = today.toISOString().slice(0, 10);
+    currentData.atualizadoEm = iso;
+
+    const cleanData = {
+      atualizadoEm: currentData.atualizadoEm,
+      sdrs: currentData.sdrs.map(({ _previewUrl, ...rest }) => rest)
+    };
+    const jsonText = JSON.stringify(cleanData, null, 2) + '\n';
+    const base64Json = btoa(unescape(encodeURIComponent(jsonText)));
+
+    // sha pode ter mudado se o arquivo foi editado em outro lugar; busca de novo por segurança
+    const latest = await ghGetFile(cfg, 'data.json');
+    const result = await ghPutFile(cfg, 'data.json', base64Json, 'Atualiza pontuações e fotos do placar SDR', latest ? latest.sha : currentSha);
+    currentSha = result.content.sha;
+    pendingPhotos = {};
+
+    setStatus('save-status', 'ok', 'Salvo! O placar publicado deve atualizar em ~1 minuto.');
+  }catch(err){
+    console.error(err);
+    setStatus('save-status', 'err', 'Erro ao salvar: ' + err.message);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function addSdr(){
+  if(!currentData) currentData = { atualizadoEm: new Date().toISOString().slice(0,10), sdrs: [] };
+  currentData.sdrs.push({
+    id: '',
+    nome: 'Novo SDR',
+    traco: '',
+    avatar: 'baixinha',
+    foto: '',
+    agendamentos: 0,
+    _previewUrl: null
+  });
+  renderSdrList();
+}
+
+document.getElementById('btn-save-config').addEventListener('click', () => {
+  const cfg = getConfigFromForm();
+  saveConfig(cfg);
+  setStatus('config-status', 'ok', 'Conexão salva neste navegador.');
+});
+document.getElementById('btn-load').addEventListener('click', loadFromGithub);
+document.getElementById('btn-add-sdr').addEventListener('click', addSdr);
+document.getElementById('btn-save').addEventListener('click', saveToGithub);
+
+// inicialização
+fillConfigForm(loadConfig());
+</script>
+</body>
+</html>
