@@ -1,6 +1,7 @@
 // ---------------------------------------------------------
 // Ranking SDR — Multiluz Solar
-// Edite data.json para atualizar as pontuações diariamente.
+// Edite data.json (ou use admin.html) para atualizar as
+// pontuações e as fotos diariamente.
 // ---------------------------------------------------------
 
 const AVATARS = {
@@ -74,6 +75,19 @@ const traitEmoji = {
   pescador: "🎣"
 };
 
+// Retorna o HTML do avatar: foto real (se cadastrada) ou o personagem cartoon.
+function avatarMarkup(sdr){
+  if (sdr.foto && sdr.foto.trim() !== "") {
+    const safeAlt = (sdr.nome || "").replace(/"/g, "&quot;");
+    return `<img class="avatar-photo" src="${sdr.foto}" alt="${safeAlt}" loading="lazy">`;
+  }
+  return AVATARS[sdr.avatar] || "";
+}
+
+function traitClass(sdr){
+  return sdr.avatar ? `trait-${sdr.avatar}` : "";
+}
+
 async function loadData(){
   const res = await fetch('data.json', { cache: 'no-store' });
   if(!res.ok) throw new Error('Não foi possível carregar data.json');
@@ -144,9 +158,9 @@ function renderLeader(sdr){
   el.innerHTML = `
     <span class="leader-tag">👑 Líder do dia</span>
     <div class="leader-row">
-      <div class="leader-avatar-wrap">
+      <div class="leader-avatar-wrap ${traitClass(sdr)}">
         <span class="crown">👑</span>
-        ${AVATARS[sdr.avatar]}
+        ${avatarMarkup(sdr)}
       </div>
       <div class="leader-info">
         <h2>${sdr.nome}</h2>
@@ -170,7 +184,7 @@ function renderBoard(sdrs){
     return `
       <article class="card rank-${rank}" style="animation-delay:${i * 0.12}s">
         <div class="rank-num">${medal}</div>
-        <div class="avatar-wrap">${AVATARS[sdr.avatar]}</div>
+        <div class="avatar-wrap ${traitClass(sdr)}">${avatarMarkup(sdr)}</div>
         <div class="card-info">
           <h3>${sdr.nome}</h3>
           <span class="trait-chip">${traitEmoji[sdr.avatar] || '✨'} ${sdr.traco}</span>
